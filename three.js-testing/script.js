@@ -56,10 +56,52 @@ function randomStar() {
 
 Array(200).fill().forEach(randomStar);
 
+// Movement and Physics
+const keys = {};
+let velocityY = 0;
+const gravity = -0.015;
+const jumpForce = 0.35;
+const moveSpeed = 0.15;
+let isGrounded = false;
+const cameraOffset = new THREE.Vector3(0, 5, 10);
+
+window.addEventListener('keydown', (event) => {
+	keys[event.code] = true;
+});
+
+window.addEventListener('keyup', (event) => {
+	keys[event.code] = false;
+});
+
 function animate() {
 	requestAnimationFrame(animate);
-	cube.rotation.x += 0.01;
-	cube.rotation.y += 0.01;
+
+	// WASD Movement
+	if (keys['KeyW']) cube.position.z -= moveSpeed;
+	if (keys['KeyS']) cube.position.z += moveSpeed;
+	if (keys['KeyA']) cube.position.x -= moveSpeed;
+	if (keys['KeyD']) cube.position.x += moveSpeed;
+
+	// Jump
+	if (keys['Space'] && isGrounded) {
+		velocityY = jumpForce;
+		isGrounded = false;
+	}
+
+	// Gravity & Vertical Physics
+	velocityY += gravity;
+	cube.position.y += velocityY;
+
+	// Ground collision (cube height is 1, so center is at y = 0.5 when on ground)
+	if (cube.position.y <= 0.5) {
+		cube.position.y = 0.5;
+		velocityY = 0;
+		isGrounded = true;
+	}
+
+	// Camera follow behind cube
+	camera.position.copy(cube.position).add(cameraOffset);
+	controls.target.copy(cube.position);
 	controls.update();
 	renderer.render(scene, camera);
 }
