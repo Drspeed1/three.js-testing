@@ -69,10 +69,23 @@ const keys = {};
 let velocityY = 0;
 const gravity = -0.015;
 const jumpForce = 0.35;
-const moveSpeed = 0.15;
-const turnSpeed = 0.04;
+
+// Car speed and friction parameters
+let speed = 0;
+const maxForwardSpeed = 0.25;
+const maxReverseSpeed = -0.12;
+const acceleration = 0.008;
+const friction = 0.96;
+const turnSpeed = 0.035;
+
 let isGrounded = false;
 const cameraOffset = new THREE.Vector3(0, 12, 12);
+let isUserInteractingWithCamera = false;
+
+// Track manual camera rotation via OrbitControls
+controls.addEventListener('start', () => {
+	isUserInteractingWithCamera = true;
+});
 
 window.addEventListener('keydown', (event) => {
 	keys[event.code] = true;
@@ -85,19 +98,30 @@ window.addEventListener('keyup', (event) => {
 function animate() {
 	requestAnimationFrame(animate);
 
-	// Car Steering (A/D rotate)
+	const isMoving = keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD'] || Math.abs(speed) > 0.01;
+
+	// If user presses movement keys, return camera control to auto-follow
+	if (keys['KeyW'] || keys['KeyS'] || keys['KeyA'] || keys['KeyD']) {
+		isUserInteractingWithCamera = false;
+	}
+
+	// Acceleration & Deceleration (Coasting friction)
+	if (keys['KeyW']) {
+		speed += acceleration;
+	} else if (keys['KeyS']) {
+		speed -= acceleration;
+	} else {
+		speed *= friction;
+	}
+	speed = THREE.MathUtils.clamp(speed, maxReverseSpeed, maxForwardSpeed);
+
+	// Steering (A/D rotate) - turns relative to car movement
 	if (keys['KeyA']) cube.rotation.y += turnSpeed;
 	if (keys['KeyD']) cube.rotation.y -= turnSpeed;
 
-	// Car Acceleration (W/S move forward/backward along facing direction)
-	if (keys['KeyW']) {
-		cube.position.x += Math.sin(cube.rotation.y) * moveSpeed;
-		cube.position.z -= Math.cos(cube.rotation.y) * moveSpeed;
-	}
-	if (keys['KeyS']) {
-		cube.position.x -= Math.sin(cube.rotation.y) * moveSpeed;
-		cube.position.z += Math.cos(cube.rotation.y) * moveSpeed;
-	}
+	// Move car forward/backward along facing direction
+	cube.position.x += Math.sin(cube.rotation.y) * speed;
+	cube.position.z -= Math.cos(cube.rotation.y) * speed;
 
 	// Jump
 	if (keys['Space'] && isGrounded) {
@@ -116,10 +140,18 @@ function animate() {
 		isGrounded = true;
 	}
 
-	// Camera follow behind cube relative to rotation
-	const rotatedOffset = cameraOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), cube.rotation.y);
-	camera.position.copy(cube.position).add(rotatedOffset);
-	controls.target.copy(cube.position);
+	// Smooth Camera Follow using Lerp (Linear Interpolation)
+	if (!isUserInteractingWithCamera) {
+		const rotatedOffset = cameraOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), cube.rotation.y);
+		const idealCameraPos = cube.position.clone().add(rotatedOffset);
+		camera.position.lerp(idealCameraPos, 0.08);
+	} else {
+		// Keep camera locked onto the car position while preserving user's manual orbit angle
+		const targetDelta = cube.position.clone().sub(controls.target);
+		camera.position.add(targetDelta);
+	}
+
+	controls.target.lerp(cube.position, 0.1);
 	controls.update();
 	renderer.render(scene, camera);
 }
