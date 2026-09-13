@@ -15,8 +15,8 @@ const ambientLight = new THREE.AmbientLight(0xffffff, 5);
 scene.add(ambientLight);
 
 // grid
-// const gridHelper = new THREE.GridHelper(500, 500);
-// scene.add(gridHelper);
+const gridHelper = new THREE.GridHelper(500, 500);
+scene.add(gridHelper);
 
 // ground
 const planeGeometry = new THREE.PlaneGeometry(500, 500);
@@ -70,6 +70,7 @@ let velocityY = 0;
 const gravity = -0.015;
 const jumpForce = 0.35;
 const moveSpeed = 0.15;
+const turnSpeed = 0.04;
 let isGrounded = false;
 const cameraOffset = new THREE.Vector3(0, 12, 12);
 
@@ -84,11 +85,19 @@ window.addEventListener('keyup', (event) => {
 function animate() {
 	requestAnimationFrame(animate);
 
-	// WASD Movement
-	if (keys['KeyW']) cube.position.z -= moveSpeed;
-	if (keys['KeyS']) cube.position.z += moveSpeed;
-	if (keys['KeyA']) cube.position.x -= moveSpeed;
-	if (keys['KeyD']) cube.position.x += moveSpeed;
+	// Car Steering (A/D rotate)
+	if (keys['KeyA']) cube.rotation.y += turnSpeed;
+	if (keys['KeyD']) cube.rotation.y -= turnSpeed;
+
+	// Car Acceleration (W/S move forward/backward along facing direction)
+	if (keys['KeyW']) {
+		cube.position.x += Math.sin(cube.rotation.y) * moveSpeed;
+		cube.position.z -= Math.cos(cube.rotation.y) * moveSpeed;
+	}
+	if (keys['KeyS']) {
+		cube.position.x -= Math.sin(cube.rotation.y) * moveSpeed;
+		cube.position.z += Math.cos(cube.rotation.y) * moveSpeed;
+	}
 
 	// Jump
 	if (keys['Space'] && isGrounded) {
@@ -107,8 +116,9 @@ function animate() {
 		isGrounded = true;
 	}
 
-	// Camera follow behind cube
-	camera.position.copy(cube.position).add(cameraOffset);
+	// Camera follow behind cube relative to rotation
+	const rotatedOffset = cameraOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), cube.rotation.y);
+	camera.position.copy(cube.position).add(rotatedOffset);
 	controls.target.copy(cube.position);
 	controls.update();
 	renderer.render(scene, camera);
