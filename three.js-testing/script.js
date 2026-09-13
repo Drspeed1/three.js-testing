@@ -15,8 +15,8 @@ const ambientLight = new THREE.AmbientLight(0xffffff, 5);
 scene.add(ambientLight);
 
 // grid
-const gridHelper = new THREE.GridHelper(500, 500);
-scene.add(gridHelper);
+// const gridHelper = new THREE.GridHelper(500, 500);
+// scene.add(gridHelper);
 
 // ground
 const planeGeometry = new THREE.PlaneGeometry(500, 500);
@@ -71,7 +71,7 @@ const gravity = -0.015;
 const jumpForce = 0.35;
 const moveSpeed = 0.15;
 let isGrounded = false;
-const cameraOffset = new THREE.Vector3(0, 5, 10);
+const cameraOffset = new THREE.Vector3(0, 12, 12);
 
 window.addEventListener('keydown', (event) => {
 	keys[event.code] = true;
