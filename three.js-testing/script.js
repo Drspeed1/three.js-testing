@@ -5,8 +5,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 const canvas = document.querySelector('canvas.webgl')
 
 // Geometry and material
-const geometry = new THREE.BoxGeometry();
-const material = new THREE.MeshStandardMaterial({ color: 'blue', wireframe: false });
+const geometry = new THREE.BoxGeometry(1, 1, 2);
+const material = new THREE.MeshStandardMaterial({ color: 'red', wireframe: false });
 
 const scene = new THREE.Scene();
 
@@ -15,11 +15,11 @@ const ambientLight = new THREE.AmbientLight(0xffffff, 5);
 scene.add(ambientLight);
 
 // grid
-const gridHelper = new THREE.GridHelper(50, 50);
+const gridHelper = new THREE.GridHelper(500, 500);
 scene.add(gridHelper);
 
 // ground
-const planeGeometry = new THREE.PlaneGeometry(50, 50);
+const planeGeometry = new THREE.PlaneGeometry(500, 500);
 const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x444444, side: THREE.DoubleSide });
 const ground = new THREE.Mesh(planeGeometry, planeMaterial);
 ground.rotation.x = -Math.PI / 2;
@@ -28,6 +28,12 @@ scene.add(ground);
 // cube
 const cube = new THREE.Mesh(geometry, material);
 cube.position.set(0, 5, 0);
+
+const edges = new THREE.EdgesGeometry(geometry);
+const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
+const wireframe = new THREE.LineSegments(edges, lineMaterial);
+cube.add(wireframe);
+
 scene.add(cube);
 
 // render
@@ -49,7 +55,9 @@ function randomStar() {
 	const material = new THREE.MeshStandardMaterial({ color: 'white' });
 	const star = new THREE.Mesh(geometry, material);
 
-	const [x, y, z] = Array(3).fill().map(() => THREE.MathUtils.randFloatSpread(100));
+	const x = THREE.MathUtils.randFloatSpread(300);
+	const y = THREE.MathUtils.randFloat(1, 150); // Above floor level (y > 0)
+	const z = THREE.MathUtils.randFloatSpread(300);
 	star.position.set(x, y, z);
 	scene.add(star);
 }
