@@ -14,13 +14,32 @@ const scene = new THREE.Scene();
 const ambientLight = new THREE.AmbientLight(0xffffff, 5);
 scene.add(ambientLight);
 
-// grid
-const gridHelper = new THREE.GridHelper(500, 500);
-scene.add(gridHelper);
+// ground texture
+const textureCanvas = document.createElement('canvas');
+textureCanvas.width = 256;
+textureCanvas.height = 256;
+const ctx = textureCanvas.getContext('2d');
+
+// Base light grey tile
+ctx.fillStyle = '#666666';
+ctx.fillRect(0, 0, 256, 256);
+
+// Darker grid lines to form a grid pattern
+ctx.strokeStyle = '#333333';
+ctx.lineWidth = 8;
+ctx.strokeRect(0, 0, 256, 256);
+
+const floorTexture = new THREE.CanvasTexture(textureCanvas);
+floorTexture.wrapS = THREE.RepeatWrapping;
+floorTexture.wrapT = THREE.RepeatWrapping;
+floorTexture.repeat.set(50, 50);
 
 // ground
 const planeGeometry = new THREE.PlaneGeometry(500, 500);
-const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x444444, side: THREE.DoubleSide });
+const planeMaterial = new THREE.MeshStandardMaterial({
+	map: floorTexture,
+	side: THREE.DoubleSide
+});
 const ground = new THREE.Mesh(planeGeometry, planeMaterial);
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
@@ -75,6 +94,7 @@ let speed = 0;
 const maxForwardSpeed = 0.25;
 const maxReverseSpeed = -0.12;
 const acceleration = 0.008;
+const reverseAcceleration = 0.005;
 const friction = 0.96;
 const turnSpeed = 0.035;
 
@@ -105,22 +125,25 @@ function animate() {
 		isUserInteractingWithCamera = false;
 	}
 
-	// Acceleration & Deceleration (Coasting friction)
+	// Acceleration & Deceleration (Coasting friction & Reverse)
 	if (keys['KeyW']) {
 		speed += acceleration;
 	} else if (keys['KeyS']) {
-		speed -= acceleration;
+		speed -= reverseAcceleration;
 	} else {
 		speed *= friction;
 	}
 	speed = THREE.MathUtils.clamp(speed, maxReverseSpeed, maxForwardSpeed);
 
-	// Steering (A/D rotate) - turns relative to car movement
-	if (keys['KeyA']) cube.rotation.y += turnSpeed;
-	if (keys['KeyD']) cube.rotation.y -= turnSpeed;
+	// Steering (A/D rotate) - turns relative to car movement direction
+	if (speed !== 0) {
+		const direction = speed > 0 ? 1 : -1;
+		if (keys['KeyA']) cube.rotation.y += turnSpeed * direction;
+		if (keys['KeyD']) cube.rotation.y -= turnSpeed * direction;
+	}
 
-	// Move car forward/backward along facing direction
-	cube.position.x += Math.sin(cube.rotation.y) * speed;
+	// Move car forward along facing direction
+	cube.position.x -= Math.sin(cube.rotation.y) * speed;
 	cube.position.z -= Math.cos(cube.rotation.y) * speed;
 
 	// Jump
