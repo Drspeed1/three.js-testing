@@ -18,6 +18,13 @@ scene.add(ambientLight);
 const gridHelper = new THREE.GridHelper(50, 50);
 scene.add(gridHelper);
 
+// ground
+const planeGeometry = new THREE.PlaneGeometry(50, 50);
+const planeMaterial = new THREE.MeshStandardMaterial({ color: 0x444444, side: THREE.DoubleSide });
+const ground = new THREE.Mesh(planeGeometry, planeMaterial);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
 // cube
 const cube = new THREE.Mesh(geometry, material);
 cube.position.set(0, 5, 0);
